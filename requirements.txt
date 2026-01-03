@@ -1,0 +1,5 @@
+aiogram==3.22.0
+pydantic-settings==2.12.0
+torch==2.9.1
+transformers==4.57.3
+pillow==12.0.0

@@ -1,0 +1,23 @@
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.types import BotCommand
+
+from src.config import settings
+from src.bot.handlers import router
+
+
+bot = Bot(
+    token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
+dp = Dispatcher()
+dp.include_router(router)
+
+async def setup_bot():
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Перезапустить бота"),
+        ]
+    )
+    await bot.delete_webhook(drop_pending_updates=True)
+
