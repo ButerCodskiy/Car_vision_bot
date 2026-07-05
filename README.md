@@ -1,10 +1,19 @@
-# 🚗 Car Classification Telegram Bot
+# 🚗 Car Classification System (Computer Vision)
 
-**Telegram-бот для классификации марок автомобилей**, использующий современные методы Computer Vision.
+**Микросервисное ML-приложение для классификации марок автомобилей**, использующее современные методы Computer Vision.
 
-Проект представляет собой законченное ML-решение: от обучения моделей (Vision Transformer и ResNet50) с использованием Transfer Learning до деплоя инференса в асинхронном Telegram-боте.
+Проект представляет собой законченное ML-решение: от обучения моделей (Vision Transformer и ResNet50) с использованием Transfer Learning до деплоя в продакшен через микросервисную архитектуру (FastAPI + Streamlit + Telegram Bot) в Docker.
 
 Поддерживаемые классы: `Audi`, `Bentley`, `BMW`, `Porsche`, `Toyota`.
+
+---
+
+## 🏗 Архитектура
+
+Проект разделен на 3 независимых микросервиса:
+1. **ML Backend (FastAPI)** — REST API сервис, загружающий в память веса нейросети и выполняющий асинхронный инференс (предсказание) по поступающим изображениям.
+2. **Telegram Bot (Aiogram 3)** — асинхронный бот-клиент, пересылающий фотографии пользователей в ML Backend.
+3. **Web Frontend (Streamlit)** — интерактивный веб-интерфейс для загрузки фотографий через браузер.
 
 ---
 
@@ -32,20 +41,40 @@
 
 ## 🛠 Технический стек
 
-### Machine Learning & Data Science
-*   **PyTorch**: Основной фреймворк для обучения нейросетей.
-*   **Transformers (Hugging Face)**: Использование предобученной модели ViT (`google/vit-base-patch16-224`) и процессоров изображений.
-*   **Torchvision**: Использование архитектуры ResNet50 и аугментаций.
-*   **Scikit-learn**: Расчет метрик (Confusion Matrix, F1-score, Classification Report) и стратифицированное разбиение данных (`train_test_split`).
-*   **Pandas / NumPy**: Обработка данных и анализ результатов.
-*   **Matplotlib / Seaborn**: Визуализация процесса обучения и матрицы ошибок.
-*   **Pillow (PIL)**: Работа с изображениями.
+*   **ML & Data Science**: PyTorch, HuggingFace Transformers, Torchvision, Scikit-learn, Pandas.
+*   **Backend API**: FastAPI, Uvicorn, aiohttp.
+*   **Frontend**: Streamlit.
+*   **Telegram Client**: Aiogram 3.x.
+*   **Инфраструктура**: Docker, Docker Compose, Git LFS.
 
-### Backend & Инфраструктура
-*   **Aiogram 3.x**: Современный асинхронный фреймворк для Telegram API.
-*   **Asyncio**: Асинхронная обработка запросов (инференс модели не блокирует бота).
-*   **Pydantic**: Валидация и управление настройками конфигурации (`.env`).
-*   **Git LFS**: Версионирование больших файлов (веса модели).
+---
+
+## 🚀 Установка и запуск (Через Docker)
+
+Проект использует Git LFS для хранения весов модели. Убедитесь, что он установлен перед клонированием.
+
+### 1. Клонирование репозитория
+```bash
+git lfs install
+git clone https://github.com/ВАШ_НИК/car-classification-bot.git
+cd car-classification-bot
+```
+
+### 2. Конфигурация
+Создайте файл `.env` в корне проекта и укажите токен вашего бота:
+```env
+BOT_TOKEN=your_telegram_bot_token_here
+```
+
+### 3. Запуск всех сервисов (Docker Compose)
+```bash
+docker-compose up -d --build
+```
+
+После запуска сервисы будут доступны по следующим адресам:
+- **FastAPI (Swagger)**: `http://localhost:8000/docs`
+- **Streamlit Web UI**: `http://localhost:8501`
+- **Telegram Bot**: Запустится в фоне автоматически.
 
 ---
 
@@ -53,59 +82,25 @@
 
 ```text
 car-classification-bot/
-├─ notebooks/                            # Jupyter-ноутбуки
-│  ├─ vision_transformer.ipynb           # Обучение ViT (Production Model)
-│  └─ resnet_training.ipynb              # Эксперименты с ResNet50 (Benchmark)
+├─ notebooks/                            # Jupyter-ноутбуки (Обучение ViT / ResNet)
 ├─ src/
+│  ├─ api/
+│  │  └─ main.py                         # Точка входа FastAPI (ML Backend)
 │  ├─ bot/
-│  │  ├─ __init__.py                     # Инициализация диспетчера
-│  │  └─ handlers.py                     # Логика обработки фото и команд
-│  ├─ services/
-│  │  └─ predict.py                      # Асинхронный сервис инференса модели
+│  │  ├─ __init__.py                     # Инициализация бота
+│  │  └─ handlers.py                     # Пересылка фото от юзера в API
+│  ├─ web/
+│  │  └─ app.py                          # Streamlit Frontend
 │  ├─ models/
-│  │  └─ vit.py                          # Класс-обертка для ViT (загрузка, препроцессинг)
-│  ├─ utils/
-│  │  └─ image_loader.py                 # Утилиты конвертации изображений
-│  ├─ main.py                            # Точка входа (Entry point)
-│  └─ config.py                          # Конфигурация через Pydantic
-├─ saved_models/
-│  └─ vit_model.pth                      # Веса модели (хранятся в Git LFS)
-├─ requirements.txt                      # Список зависимостей
-├─ .env                                  # Шаблон переменных окружения
+│  │  ├─ vit.py                          # Класс-обертка для ViT
+│  │  └─ best_vit_model_stage1.pth       # Веса модели (Git LFS)
+│  ├─ services/
+│  │  ├─ predict.py                      # Асинхронный сервис инференса
+│  │  └─ api_client.py                   # Клиент aiohttp для обращения к FastAPI
+│  ├─ main.py                            # Точка входа Telegram-бота
+│  └─ config.py                          # Конфигурация (Pydantic)
+├─ docker-compose.yml                    # Оркестрация сервисов
+├─ Dockerfile                            # Docker-образ приложения
+├─ requirements.txt                      # Зависимости
 └─ README.md
 ```
-🚀 Установка и запуск
-Проект использует Git LFS для хранения весов модели. Убедитесь, что он установлен перед клонированием.
-
-1. Клонирование репозитория
-bash
-git lfs install
-git clone https://github.com/ВАШ_НИК/car-classification-bot.git
-cd car-classification-bot
-2. Настройка окружения
-Рекомендуется использовать Python 3.9+.
-
-bash
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# Linux / macOS
-python3 -m venv venv
-source venv/bin/activate
-3. Установка зависимостей
-bash
-pip install -r requirements.txt
-4. Конфигурация
-Создайте файл .env в корне проекта на основе примера:
-
-bash
-# Создаем файл .env и прописываем туда:
-BOT_TOKEN=your_telegram_bot_token_here
-VIT_MODEL_PATH=saved_models/vit_model.pth
-(Токен бота можно получить у @BotFather в Telegram)
-
-5. Запуск
-bash
-python src/main.py
-После запуска бот готов принимать изображения автомобилей.
