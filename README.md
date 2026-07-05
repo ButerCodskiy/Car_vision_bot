@@ -1,0 +1,111 @@
+# 🚗 Car Classification Telegram Bot
+
+**Telegram-бот для классификации марок автомобилей**, использующий современные методы Computer Vision.
+
+Проект представляет собой законченное ML-решение: от обучения моделей (Vision Transformer и ResNet50) с использованием Transfer Learning до деплоя инференса в асинхронном Telegram-боте.
+
+Поддерживаемые классы: `Audi`, `Bentley`, `BMW`, `Porsche`, `Toyota`.
+
+---
+
+## 📊 Сравнение моделей и Результаты
+
+В ходе работы над проектом были обучены и сравнены две архитектуры. Основной целью было выявить баланс между точностью распознавания и скоростью обучения.
+
+**Используемые методы:**
+*   **Transfer Learning:** Использование предобученных весов (ImageNet).
+*   **Fine-tuning:** Двухэтапное обучение (сначала обучение классификатора с замороженным "хребтом", затем разморозка и дообучение всей сети с низким Learning Rate).
+*   **Augmentation:** RandomRotation, HorizontalFlip, ColorJitter.
+
+### Итоговые метрики на тестовой выборке
+
+| Metric | ResNet50 (Baseline) | Vision Transformer (ViT) |
+| :--- | :---: | :---: |
+| **Test Accuracy** | 85.79% | **92.89%** 🏆 |
+| **Test F1-Score** (Weighted) | 0.8551 | **0.9287** 🏆 |
+| **Training Time** | 46.26 min | **35.1 min** ⚡ |
+| **Model Size** | **~90 MB** 💾 | 327.4 MB |
+
+> **Вывод:** Модель **Vision Transformer (ViT-base-patch16-224)** показала значительно более высокую точность (~93%) и F1-score по сравнению с ResNet50 (~86%). Несмотря на больший размер весов, ViT обучался быстрее и показал лучшую обобщающую способность, поэтому именно он был выбран для продакшена.
+
+---
+
+## 🛠 Технический стек
+
+### Machine Learning & Data Science
+*   **PyTorch**: Основной фреймворк для обучения нейросетей.
+*   **Transformers (Hugging Face)**: Использование предобученной модели ViT (`google/vit-base-patch16-224`) и процессоров изображений.
+*   **Torchvision**: Использование архитектуры ResNet50 и аугментаций.
+*   **Scikit-learn**: Расчет метрик (Confusion Matrix, F1-score, Classification Report) и стратифицированное разбиение данных (`train_test_split`).
+*   **Pandas / NumPy**: Обработка данных и анализ результатов.
+*   **Matplotlib / Seaborn**: Визуализация процесса обучения и матрицы ошибок.
+*   **Pillow (PIL)**: Работа с изображениями.
+
+### Backend & Инфраструктура
+*   **Aiogram 3.x**: Современный асинхронный фреймворк для Telegram API.
+*   **Asyncio**: Асинхронная обработка запросов (инференс модели не блокирует бота).
+*   **Pydantic**: Валидация и управление настройками конфигурации (`.env`).
+*   **Git LFS**: Версионирование больших файлов (веса модели).
+
+---
+
+## 📂 Структура проекта
+
+```text
+car-classification-bot/
+├─ notebooks/                            # Jupyter-ноутбуки
+│  ├─ vision_transformer.ipynb           # Обучение ViT (Production Model)
+│  └─ resnet_training.ipynb              # Эксперименты с ResNet50 (Benchmark)
+├─ src/
+│  ├─ bot/
+│  │  ├─ __init__.py                     # Инициализация диспетчера
+│  │  └─ handlers.py                     # Логика обработки фото и команд
+│  ├─ services/
+│  │  └─ predict.py                      # Асинхронный сервис инференса модели
+│  ├─ models/
+│  │  └─ vit.py                          # Класс-обертка для ViT (загрузка, препроцессинг)
+│  ├─ utils/
+│  │  └─ image_loader.py                 # Утилиты конвертации изображений
+│  ├─ main.py                            # Точка входа (Entry point)
+│  └─ config.py                          # Конфигурация через Pydantic
+├─ saved_models/
+│  └─ vit_model.pth                      # Веса модели (хранятся в Git LFS)
+├─ requirements.txt                      # Список зависимостей
+├─ .env                                  # Шаблон переменных окружения
+└─ README.md
+```
+🚀 Установка и запуск
+Проект использует Git LFS для хранения весов модели. Убедитесь, что он установлен перед клонированием.
+
+1. Клонирование репозитория
+bash
+git lfs install
+git clone https://github.com/ВАШ_НИК/car-classification-bot.git
+cd car-classification-bot
+2. Настройка окружения
+Рекомендуется использовать Python 3.9+.
+
+bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# Linux / macOS
+python3 -m venv venv
+source venv/bin/activate
+3. Установка зависимостей
+bash
+pip install -r requirements.txt
+4. Конфигурация
+Создайте файл .env в корне проекта на основе примера:
+
+bash
+# Создаем файл .env и прописываем туда:
+BOT_TOKEN=your_telegram_bot_token_here
+VIT_MODEL_PATH=saved_models/vit_model.pth
+(Токен бота можно получить у @BotFather в Telegram)
+
+5. Запуск
+bash
+python src/main.py
+После запуска бот готов принимать изображения автомобилей.

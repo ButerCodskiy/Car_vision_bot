@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 1. FastAPI сервис с ML-моделью
+  api:
+    build: .
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      # Путь к модели. В Docker он будет относительным рабочей директории /app
+      - VIT_MODEL_PATH=/app/saved_models/best_vit_model_stage1.pth
+
+  # 2. Telegram-бот клиент
+  bot:
+    build: .
+    command: python src/main.py
+    depends_on:
+      - api
+    volumes:
+      - .:/app
+    env_file:
+      - .env  # Загружаем BOT_TOKEN отсюда
+    environment:
+      # Обращаемся к API по имени контейнера `api`
+      - API_URL=http://api:8000
+
+  # 3. Streamlit Web UI
+  web:
+    build: .
+    command: streamlit run src/web/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    volumes:
+      - .:/app
+    environment:
+      # Обращаемся к API по имени контейнера `api`
+      - API_URL=http://api:8000
